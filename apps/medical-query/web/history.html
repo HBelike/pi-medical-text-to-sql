@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>问答历史 · Pi 智能问数</title>
+    <script>
+      // 历史页沿用问数页的主题偏好，在加载样式前恢复以避免闪白。
+      try {
+        if (localStorage.getItem("medical-query-theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch { /* 无法读取偏好时使用浅色主题。 */ }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/history.css" />
+    <script src="/history.js" defer></script>
+  </head>
+  <body class="history-page">
+    <header class="topbar history-topbar">
+      <!-- 产品与当前页标题合并为一行；页面操作集中右侧，为记录区腾出纵向空间。 -->
+      <h1 class="history-page-title">
+        <a class="brand" id="history-brand-link" href="/" aria-label="返回 Pi 智能问数">
+          <span class="brand-mark" aria-hidden="true">π</span>
+          <span class="history-parent-title">Pi 智能问数</span>
+        </a>
+        <span class="history-title-separator" aria-hidden="true">·</span>
+        <span>问答历史</span>
+      </h1>
+      <div class="header-actions history-page-actions" role="group" aria-label="页面操作">
+        <!-- 历史页转到新版评测中心；原工作台仍可从新版入口访问。 -->
+        <a class="history-button" href="/evaluation/tasks">评测中心</a>
+        <a class="history-button history-back-link" id="history-back-link" href="/" aria-label="返回问数" title="返回问数">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg>
+          <span>返回问数</span>
+        </a>
+        <button class="history-button" id="history-refresh" type="button" aria-label="刷新记录" title="刷新记录">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>
+          <span>刷新记录</span>
+        </button>
+        <button class="icon-button theme-toggle" id="history-theme-toggle" type="button" aria-label="切换到黑色主题" aria-pressed="false">
+          <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+          <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="history-main">
+      <!-- 筛选由服务端对全部真实历史执行；窄屏工具栏可横向平移，不占满记录区。 -->
+      <form class="history-filters" id="history-filters" role="search" aria-label="筛选问答历史">
+        <div class="history-filter history-search">
+          <label for="history-query">原始问题</label>
+          <div class="history-search-field">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m12.5 12.5 4 4"/></svg>
+            <input id="history-query" name="q" type="search" placeholder="输入问题关键词" autocomplete="off" maxlength="4000" />
+          </div>
+        </div>
+        <div class="history-filter"><label for="history-model">模型</label><select id="history-model" name="model"><option value="">全部模型</option></select></div>
+        <div class="history-filter"><label for="history-status">应答状态</label><select id="history-status" name="status"><option value="">全部状态</option></select></div>
+        <div class="history-filter"><label for="history-source">数据源</label><select id="history-source" name="source_id"><option value="">全部数据源</option></select></div>
+        <div class="history-filter"><label for="history-period">时间范围</label><select id="history-period" name="period"><option value="all">全部时间</option><option value="today">今天</option><option value="7">近 7 天</option><option value="30">近 30 天</option></select></div>
+        <button class="history-reset" id="history-reset" type="button">重置</button>
+        <button class="sr-only" type="submit">搜索历史</button>
+      </form>
+
+      <div class="history-error" id="history-error" role="alert" hidden></div>
+      <section class="history-records" aria-label="问答历史记录">
+        <div class="history-table-heading">
+          <p id="history-count" role="status" aria-live="polite">正在读取记录…</p>
+          <span>拖动表头边缘调宽 · 悬停查看完整内容</span>
+        </div>
+        <!-- 记录区独立纵向、横向滚动，固定表头与操作列，分页始终保留在视口内。 -->
+        <div class="history-table-wrap" id="history-table-wrap" role="region" aria-label="问答历史表格，可横向滚动" tabindex="0" aria-busy="true">
+          <table class="history-table">
+            <caption class="sr-only">问答历史，按提问时间从新到旧排列</caption>
+            <colgroup><col class="history-col-id"/><col class="history-col-question"/><col class="history-col-answer"/><col class="history-col-tables"/><col class="history-col-models"/><col class="history-col-status"/><col class="history-col-time"/><col class="history-col-actions"/></colgroup>
+            <thead><tr><th scope="col">ID</th><th scope="col">原始问题</th><th scope="col">答案输出</th><th scope="col">查询表</th><th scope="col">各环节模型</th><th scope="col">应答状态</th><th scope="col">时间</th><th scope="col" class="history-actions-cell">操作</th></tr></thead>
+            <tbody id="history-rows"><tr><td colspan="8" class="history-empty-cell">正在读取问答历史…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="history-pagination" aria-label="历史分页">
+          <span id="history-range">—</span>
+          <div class="history-pagination-controls">
+            <label for="history-page-size" class="sr-only">每页记录数</label>
+            <select id="history-page-size"><option value="10">10 条 / 页</option><option value="20">20 条 / 页</option><option value="50">50 条 / 页</option></select>
+            <button class="history-page-button" id="history-prev" type="button" disabled>上一页</button>
+            <span id="history-page-label" aria-live="polite">1 / 1</span>
+            <button class="history-page-button" id="history-next" type="button" disabled>下一页</button>
+          </div>
+        </div>
+      </section>
+      <p class="history-table-note">“匹配表”仅表示匹配涉及的表，不表示已执行查询。标记为“评测”的记录来自评测任务。</p>
+    </main>
+
+    <!-- 原生对话框保留键盘关闭与焦点约束，详情只展示选中记录的实际内容。 -->
+    <dialog class="history-detail" id="history-detail" aria-labelledby="history-detail-title">
+      <header class="history-detail-heading"><div><h2 id="history-detail-title">问答详情</h2><p id="history-detail-id"></p></div><button class="icon-button" id="history-detail-close" type="button" aria-label="关闭问答详情" autofocus>×</button></header>
+      <div class="history-detail-body" id="history-detail-body"></div>
+      <footer class="history-detail-footer"><a class="history-primary-link" id="history-detail-conversation" href="/">回到会话</a></footer>
+    </dialog>
+  </body>
+</html>

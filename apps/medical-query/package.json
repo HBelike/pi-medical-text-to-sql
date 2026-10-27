@@ -1,0 +1,22 @@
+{
+  "name": "@medical/pi-query",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import ../../scripts/issues/register.mjs --conditions=source src/server.ts",
+    "fixtures": "python3 python/build_fixtures.py",
+    "fixtures:l0": "python3 python/build_l0_fixtures.py",
+    "fixtures:l0-benchmark": "python3 python/build_l0_benchmark.py",
+    "check": "biome check src test web/*.js && tsc --noEmit -p tsconfig.json",
+    "eval": "node --import ../../scripts/issues/register.mjs --conditions=source src/evaluation/cli.ts",
+    "eval:linking": "node --import ../../scripts/issues/register.mjs --conditions=source src/evaluation/cli.ts"
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.2.0",
+    "@earendil-works/pi-ai": "1.2.0",
+    "@earendil-works/pi-durable": "1.2.0",
+    "p-queue": "10.0.0"
+  },
+  "engines": { "node": ">=24.0.0" }
+}

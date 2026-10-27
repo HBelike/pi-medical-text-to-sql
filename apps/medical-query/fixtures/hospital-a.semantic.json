@@ -1,0 +1,19 @@
+{
+  "name": "模拟医院 A",
+  "version": "fixture-v1",
+  "as_of": "2026-10-15T12:00:00+08:00",
+  "description": "离线合成数据；仅用于问数验证，不代表真实医院。患者人数按患者主键去重，就诊人次按就诊主键计数。",
+  "tables": {
+    "patients": {"description": "患者主表，一行一个患者", "columns": {"patient_id": "患者唯一标识", "name": "患者姓名", "age": "夹具参照时间下的整数年龄", "sex": "性别，F女性/M男性"}},
+    "encounters": {"description": "就诊记录，一行一次就诊；同一患者可以多次就诊", "columns": {"encounter_id": "就诊唯一标识", "patient_id": "患者标识", "department": "本次就诊归属科室", "admitted_at": "入院时间", "discharged_at": "出院时间，住院中为空", "status": "D=已出院，A=住院中，C=已撤销；出院统计仅D", "cost": "本次就诊费用，单位元"}},
+    "diagnoses": {"description": "就诊诊断，一次就诊可有多条诊断；诊断关联不能放大患者人数", "columns": {"diagnosis_id": "诊断记录标识", "encounter_id": "所属就诊标识", "code": "E11=2型糖尿病，I10=高血压", "status": "confirmed=确诊，suspected=疑似；诊断状态不可套用就诊状态代码"}}
+  },
+  "relations": [
+    {"id": "encounters_patient", "left_table": "encounters", "right_table": "patients", "pairs": [{"left": "patient_id", "right": "patient_id"}], "origin": "human_confirmed", "status": "active", "cardinality": "many_to_one"},
+    {"id": "diagnoses_encounter", "left_table": "diagnoses", "right_table": "encounters", "pairs": [{"left": "encounter_id", "right": "encounter_id"}], "origin": "human_confirmed", "status": "active", "cardinality": "many_to_one"}
+  ],
+  "metrics": [
+    {"id": "discharged_visits", "name": "出院人次", "table": "encounters", "key": "encounter_id", "status_field": "encounters.status", "status_value": "D", "time_field": "encounters.discharged_at", "aggregate": "count"},
+    {"id": "discharged_patients", "name": "出院患者人数", "table": "encounters", "key": "patient_id", "status_field": "encounters.status", "status_value": "D", "time_field": "encounters.discharged_at", "aggregate": "count_distinct"}
+  ]
+}

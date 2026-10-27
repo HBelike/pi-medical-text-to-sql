@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Pi 智能问数 · 医疗数据工作台</title>
+    <script>
+      // 在样式加载前恢复主题，避免刷新深色页面时先闪出白底。
+      try {
+        if (localStorage.getItem("medical-query-theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch { /* 无法保存偏好时使用默认浅色主题。 */ }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <!-- 初始页保留提问入口；问答开始后展开实际提示词和逐轮证据。 -->
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Pi 智能问数首页">
+        <span class="brand-mark" aria-hidden="true">π</span>
+        <span class="brand-title">Pi 智能问数<small>医疗数据工作台</small></span>
+      </a>
+      <div class="service-status" id="service-status" hidden><span class="status-dot"></span><span>正在连接服务</span></div>
+      <div class="header-actions">
+        <!-- 问答记录提供固定入口；侧栏继续由边缘把手控制，避免重复按钮。 -->
+        <a class="new-button history-link" id="history-link" href="/history">问答记录</a>
+        <!-- 新评测中心成为主入口；原工作台继续保留在 /evaluation 供旧流程使用。 -->
+        <a class="new-button" href="/evaluation/tasks">评测中心</a>
+        <button class="new-button" id="new-conversation" type="button"><span aria-hidden="true">＋</span> 新对话</button>
+        <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="切换到黑色主题" title="切换到黑色主题" aria-pressed="false">
+          <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+          <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace is-empty" id="workspace">
+      <!-- 保留目录节点以兼容既有会话恢复；隐藏期间不提供切换入口。 -->
+      <aside class="source-panel" id="source-panel" aria-label="数据源与会话" hidden inert>
+        <div class="source-heading"><h2>数据源</h2><span class="section-note">当前会话</span></div>
+        <label class="sr-only" for="source-select">选择数据源，切换后开启新对话</label>
+        <select id="source-select" disabled><option>正在读取数据源…</option></select>
+        <p class="source-description" id="source-description">从已接入的数据中提问</p>
+        <div class="table-directory">
+          <div class="directory-heading"><h3>可用数据表</h3><span id="table-count">—</span></div>
+          <ul class="table-list" id="table-list"><li class="muted">正在读取目录…</li></ul>
+        </div>
+        <div class="source-footer">
+          <span class="source-rule" aria-hidden="true"></span>
+          <strong>条件明确，再查询</strong>
+          <p>口径不明确时，先补充必要信息。查询结果与解释分开呈现。</p>
+          <div class="model-setting"><span>当前模型</span><span id="model-name">读取中</span></div>
+        </div>
+      </aside>
+
+      <div class="workspace-body" id="workspace-body">
+      <aside class="prompt-panel" id="prompt-panel" aria-label="模型提示词" hidden>
+        <!-- 每次真实模型调用独立成卡；面板名称保留在可访问标签中，不再重复占据头部。 -->
+        <label class="sr-only" for="prompt-turn-select">选择提示词所属问题</label>
+        <select class="prompt-turn-select" id="prompt-turn-select" aria-label="选择提示词所属问题"></select>
+        <div class="panel-content" id="prompt-content"></div>
+      </aside>
+      <!-- 桌面分隔条支持拖拽与方向键调宽；窄屏复用边缘把手展开、收起侧栏。 -->
+      <div class="panel-splitter" id="prompt-splitter" role="separator" tabindex="0" aria-label="调整提示词面板宽度" aria-orientation="vertical" aria-controls="prompt-panel" aria-valuemin="0" aria-valuemax="640" aria-valuenow="0" hidden><button class="panel-handle" id="prompt-handle" type="button" aria-label="展开提示词" aria-controls="prompt-panel" aria-expanded="false">›</button></div>
+      <main class="chat-panel">
+        <div class="conversation-header" id="conversation-header" hidden>
+          <div><h1 id="conversation-title">当前对话</h1></div>
+          <span class="conversation-status" id="conversation-status">新对话</span>
+        </div>
+        <div class="notice" id="notice" role="alert" hidden></div>
+        <section class="conversation-scroll" id="conversation-scroll" aria-label="问答记录">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-symbol" aria-hidden="true"><span>＋</span></div>
+            <h2>问一个医学数据问题</h2>
+            <p>用自然语言描述你想查询的数据。</p>
+            <div class="example-list" id="example-list"></div>
+          </div>
+          <div class="turns" id="turns"></div>
+        </section>
+      </main>
+      <div class="panel-splitter" id="evidence-splitter" role="separator" tabindex="0" aria-label="调整证据面板宽度" aria-orientation="vertical" aria-controls="evidence-panel" aria-valuemin="0" aria-valuemax="640" aria-valuenow="0" hidden><button class="panel-handle" id="evidence-handle" type="button" aria-label="展开查询证据" aria-controls="evidence-panel" aria-expanded="false">‹</button></div>
+      <aside class="evidence-panel" id="evidence-panel" aria-label="查询证据" hidden>
+        <!-- 按业务层组织证据，展开后核对每层输入、输出与交接给下一层的变量。 -->
+        <div class="panel-content" id="evidence-content"></div>
+      </aside>
+      <button class="panel-backdrop" id="panel-backdrop" type="button" aria-label="收起侧栏" tabindex="-1" hidden></button>
+      </div>
+        <!-- 同一个输入器负责新问题和当前任务的补充，避免将回答误当成新查询。 -->
+        <div class="composer-dock">
+        <form class="composer" id="composer">
+          <div class="reply-context" id="reply-context" hidden><span class="reply-dot"></span><span id="reply-context-text">补充当前查询</span></div>
+          <label class="sr-only" for="question-input">输入问题或补充信息</label>
+          <textarea id="question-input" placeholder="输入你的问题…" rows="1" maxlength="4000"></textarea>
+          <div class="composer-actions"><button class="stop-button" id="stop-button" type="button" hidden>停止查询</button><button class="send-button" id="send-button" type="submit" aria-label="发送问题" title="发送问题" disabled><span aria-hidden="true">↑</span></button></div>
+        </form>
+        <p class="composer-hint" id="composer-hint">Enter 发送 · Shift + Enter 换行</p>
+        <p class="workspace-footnote">请结合数据范围和统计口径核对结果。</p>
+        </div>
+    </div>
+    <div class="live-announcement sr-only" id="live-announcement" role="status" aria-live="polite"></div>
+  </body>
+</html>

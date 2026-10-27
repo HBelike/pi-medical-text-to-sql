@@ -1,0 +1,69 @@
+node_modules
+# 公开快照不运行上游仓库的 GitHub 自动化工作流。
+.github/
+dist/
+.artifacts/
+*.log
+.DS_Store
+*.tsbuildinfo
+# packages/*/node_modules/
+packages/*/dist/
+packages/*/dist-chrome/
+packages/*/dist-firefox/
+packages/ai/src/providers/data/
+# 公开快照携带已校验的模型目录，使新克隆仓库可直接做类型检查。
+!packages/ai/src/providers/data/
+packages/ai/src/providers/.model-generation-*/
+*.cpuprofile
+
+# Environment
+.env
+# 发布仓库只保留示例配置；真实凭据和本地环境变体不进入版本库。
+.env.*
+!.env.example
+.envrc
+# 智能问数的运行账本、数据库旁路文件与评测证据仅保留在本地。
+*.sqlite*
+*.db
+*.db-*
+*.db.*
+*.db3
+*.db3-*
+*.db3.*
+apps/medical-query/.local/
+apps/medical-query/**/__pycache__/
+docs/evidence/
+docs/runtime-load-evidence.json
+# 开源评测调研的抓取缓存不作为项目源文件提交。
+.firecrawl/
+
+# Editor files
+.vscode/
+.zed/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Package specific
+.npm/
+coverage/
+.nyc_output/
+.pi_config/
+tui-debug.log
+compaction-results/
+.opencode/
+syntax.jsonl
+out.jsonl
+pi-*.html
+out.html
+packages/coding-agent/binaries/
+packages/env/bin/
+packages/env/daemon/target/
+todo.md
+plans/
+.pi/hf-sessions/
+.pi/hf-sessions-backup/
+collect.sh
+packages/agent/docs/extensions/pi-server-artifact/index.md

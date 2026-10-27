@@ -1,0 +1,268 @@
+{
+  "version": "l0-linking-v1",
+  "source_id": "l0_mock",
+  "as_of": "2026-10-15T12:00:00+08:00",
+  "scope": "schema_linking_only_not_metric_value_evaluation",
+  "authoring": "逐项阅读 L0 指标定义、逻辑需求、合成 DDL 与语义字典后独立手写；未使用运行时 Linking 输出、模型回答或 SQL 执行结果生成答案。代码值与物理表属于合成测试约定，不是医院真实绑定。",
+  "review_limitations": "已核对所交付 L0 文件中的引用；未获得临床、财务和评审专家对完整口径的签核。年度端点、待确认目录、缺失值与零分母、手术跨类去重、预约事件配对、资产负债时点和定性评分均不得由此题集补全。",
+  "scoring_notes": "required 集合必须全部出现；只允许显式列出的额外项。code_filters 是被识别的条件集合，不是把分子分母条件合并执行的全局 AND。候选关系不进入可执行 FK。no_match 题各维度为空且必须保留 blocked/no_match。所有题均不校验完整指标数值。",
+  "cases": [
+    {
+      "id": "L0-01",
+      "question": "请核对 GK-01 门诊人次数与出院人次数比需要哪些数据。",
+      "expected": {
+        "metric_ids": ["met.gk-01"],
+        "tables": ["outpatient_visits", "inpatient_stays"],
+        "fields": ["outpatient_visits.institution_id", "outpatient_visits.visit_id", "outpatient_visits.care_setting_code", "outpatient_visits.registered_at", "inpatient_stays.institution_id", "inpatient_stays.stay_id", "inpatient_stays.discharged_at", "inpatient_stays.discharge_disposition_code", "inpatient_stays.home_bed_flag"],
+        "time_fields": ["outpatient_visits.registered_at", "inpatient_stays.discharged_at"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [
+          {"field": "outpatient_visits.care_setting_code", "op": "eq", "value": "OUTPATIENT"},
+          {"field": "inpatient_stays.home_bed_flag", "op": "eq", "value": 0},
+          {"field": "inpatient_stays.discharged_at", "op": "is_not_null", "value": null}
+        ],
+        "execution_statuses": [{"metric_id": "met.gk-01", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["outpatient_visits.visit_status_code"],
+      "notes": "来源 metrics.json / met.gk-01。分子是普通门诊挂号人次，分母是出院住院人次，按两套时间分别汇总；无患者级强制 JOIN。出院去向用于说明包含死亡等情形，不得只保留正常出院。退号处理和时间端点待业务确认。"
+    },
+    {
+      "id": "L0-02",
+      "question": "门诊量除以出院量的那个国考指标怎么取数？门诊不算急诊和体检，住院也不算家庭病床撤床。",
+      "expected": {
+        "metric_ids": ["met.gk-01"],
+        "tables": ["outpatient_visits", "inpatient_stays"],
+        "fields": ["outpatient_visits.institution_id", "outpatient_visits.visit_id", "outpatient_visits.care_setting_code", "outpatient_visits.registered_at", "inpatient_stays.institution_id", "inpatient_stays.stay_id", "inpatient_stays.discharged_at", "inpatient_stays.discharge_disposition_code", "inpatient_stays.home_bed_flag"],
+        "time_fields": ["outpatient_visits.registered_at", "inpatient_stays.discharged_at"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [
+          {"field": "outpatient_visits.care_setting_code", "op": "eq", "value": "OUTPATIENT"},
+          {"field": "inpatient_stays.home_bed_flag", "op": "eq", "value": 0},
+          {"field": "inpatient_stays.discharged_at", "op": "is_not_null", "value": null}
+        ],
+        "execution_statuses": [{"metric_id": "met.gk-01", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["outpatient_visits.visit_status_code"],
+      "allowed_extra_code_filters": [
+        {"field": "outpatient_visits.care_setting_code", "op": "ne", "value": "EMERGENCY"},
+        {"field": "outpatient_visits.care_setting_code", "op": "ne", "value": "PHYSICAL_EXAM"},
+        {"field": "outpatient_visits.care_setting_code", "op": "not_in", "value": ["EMERGENCY", "PHYSICAL_EXAM"]}
+      ],
+      "notes": "GK-01 同义改写。允许在 OUTPATIENT 之外重述已知排除代码；单独排除两个值不能代替分子要求的普通门诊代码。两个事实集不能按 patient_id 连接后再计数。"
+    },
+    {
+      "id": "L0-03",
+      "question": "GK-23 门诊患者预约后平均等待时间要关联哪些表和时间字段？",
+      "expected": {
+        "metric_ids": ["met.gk-23"],
+        "tables": ["appointment_events", "outpatient_visits"],
+        "fields": ["appointment_events.institution_id", "appointment_events.appointment_id", "appointment_events.visit_id", "appointment_events.appointment_kind_code", "appointment_events.checked_in_at", "appointment_events.called_at", "appointment_events.appointment_status_code", "outpatient_visits.institution_id", "outpatient_visits.visit_id", "outpatient_visits.care_setting_code"],
+        "time_fields": ["appointment_events.checked_in_at", "appointment_events.called_at"],
+        "relations": [{"left_table": "appointment_events", "right_table": "outpatient_visits", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "visit_id", "right": "visit_id"}]}],
+        "candidate_relations": [],
+        "code_filters": [
+          {"field": "appointment_events.appointment_status_code", "op": "eq", "value": "SUCCESS"},
+          {"field": "appointment_events.checked_in_at", "op": "is_not_null", "value": null},
+          {"field": "appointment_events.called_at", "op": "is_not_null", "value": null}
+        ],
+        "execution_statuses": [{"metric_id": "met.gk-23", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_code_filters": [
+        {"field": "appointment_events.appointment_status_code", "op": "ne", "value": "NO_SHOW"},
+        {"field": "appointment_events.appointment_status_code", "op": "not_in", "value": ["NO_SHOW"]},
+        {"field": "outpatient_visits.care_setting_code", "op": "eq", "value": "OUTPATIENT"}
+      ],
+      "notes": "来源 metrics.json / met.gk-23。复合关系必须含 institution_id 与 visit_id；等待以报到到叫诊计算，不是预约时刻到叫诊。时间非空是形成分子时长的条件，不能据此擅自剔除分母成功预约人次。多预约配对、缺失时刻及年度归属仍待确认。"
+    },
+    {
+      "id": "L0-04",
+      "question": "成功预约来门诊的人，从报到到医生叫诊平均等多久？爽约别算进去，同一次挂号有多个预约也按一个人次。",
+      "expected": {
+        "metric_ids": ["met.gk-23"],
+        "tables": ["appointment_events", "outpatient_visits"],
+        "fields": ["appointment_events.institution_id", "appointment_events.appointment_id", "appointment_events.visit_id", "appointment_events.appointment_kind_code", "appointment_events.checked_in_at", "appointment_events.called_at", "appointment_events.appointment_status_code", "outpatient_visits.institution_id", "outpatient_visits.visit_id", "outpatient_visits.care_setting_code"],
+        "time_fields": ["appointment_events.checked_in_at", "appointment_events.called_at"],
+        "relations": [{"left_table": "appointment_events", "right_table": "outpatient_visits", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "visit_id", "right": "visit_id"}]}],
+        "candidate_relations": [],
+        "code_filters": [
+          {"field": "appointment_events.appointment_status_code", "op": "eq", "value": "SUCCESS"},
+          {"field": "appointment_events.checked_in_at", "op": "is_not_null", "value": null},
+          {"field": "appointment_events.called_at", "op": "is_not_null", "value": null}
+        ],
+        "execution_statuses": [{"metric_id": "met.gk-23", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_code_filters": [
+        {"field": "appointment_events.appointment_status_code", "op": "ne", "value": "NO_SHOW"},
+        {"field": "appointment_events.appointment_status_code", "op": "not_in", "value": ["NO_SHOW"]},
+        {"field": "outpatient_visits.care_setting_code", "op": "eq", "value": "OUTPATIENT"}
+      ],
+      "notes": "GK-23 无编码同义问法。不能以 appointment_id 的条数替代挂号人次；配对规则没有因本题表述而补齐。允许重述 NO_SHOW 排除，但 SUCCESS 不可丢。"
+    },
+    {
+      "id": "L0-05",
+      "question": "上海评审 SH-PS-M0003 床位使用率对应哪些原始数据？",
+      "expected": {
+        "metric_ids": ["met.sh-ps-m0003"],
+        "tables": ["inpatient_census_days", "bed_capacity_days"],
+        "fields": ["inpatient_census_days.institution_id", "inpatient_census_days.stay_id", "inpatient_census_days.census_date", "inpatient_census_days.bed_kind_code", "bed_capacity_days.institution_id", "bed_capacity_days.capacity_date", "bed_capacity_days.open_beds_count"],
+        "time_fields": ["inpatient_census_days.census_date", "bed_capacity_days.capacity_date"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.sh-ps-m0003", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["inpatient_census_days.department_id", "bed_capacity_days.department_id", "inpatient_census_days.count_basis_code"],
+      "notes": "来源 metrics.json / met.sh-ps-m0003。实际占用床日和每日开放床位分别汇总；DDL 没有两事实表的直接 FK，不能制造连接后放大分母。床位范围和每日计数日界待确认，因此不伪造 bed_kind_code 或 count_basis_code 过滤值。"
+    },
+    {
+      "id": "L0-06",
+      "question": "实际占用总床日除以实际开放总床日，就是上海那项床位利用指标吧？我需要两边同一个统计期间的数据。",
+      "expected": {
+        "metric_ids": ["met.sh-ps-m0003"],
+        "tables": ["inpatient_census_days", "bed_capacity_days"],
+        "fields": ["inpatient_census_days.institution_id", "inpatient_census_days.stay_id", "inpatient_census_days.census_date", "inpatient_census_days.bed_kind_code", "bed_capacity_days.institution_id", "bed_capacity_days.capacity_date", "bed_capacity_days.open_beds_count"],
+        "time_fields": ["inpatient_census_days.census_date", "bed_capacity_days.capacity_date"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.sh-ps-m0003", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["inpatient_census_days.department_id", "bed_capacity_days.department_id", "inpatient_census_days.count_basis_code"],
+      "notes": "SH-PS-M0003 同义改写。床日归属是 census_date/capacity_date，不是出院日期；也不能误选平均住院日或以出院者床日代替全体实际占用床日。日期端点仍未确定。"
+    },
+    {
+      "id": "L0-07",
+      "question": "GK-36 资产负债率应取什么科目金额和业务时间？",
+      "expected": {
+        "metric_ids": ["met.gk-36"],
+        "tables": ["balance_snapshots"],
+        "fields": ["balance_snapshots.institution_id", "balance_snapshots.snapshot_date", "balance_snapshots.account_code", "balance_snapshots.balance_yuan", "balance_snapshots.balance_class_code"],
+        "time_fields": ["balance_snapshots.snapshot_date"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.gk-36", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "notes": "来源 metrics.json / met.gk-36。使用资产负债余额快照，不用收入流水 accounting_date/amount_yuan。负债合计与资产合计范围还含受托代理项；现有字典只有部分合成分类，official_liability_account_classes/official_asset_account_classes 未绑定，不能把四个示例代码当完整口径，也不得擅定年末或平均余额。code_filters 留空是明确的规则缺口。"
+    },
+    {
+      "id": "L0-08",
+      "question": "负债合计占资产合计的百分比，国考用的是哪张表？我说的是余额，不是医疗收入。",
+      "expected": {
+        "metric_ids": ["met.gk-36"],
+        "tables": ["balance_snapshots"],
+        "fields": ["balance_snapshots.institution_id", "balance_snapshots.snapshot_date", "balance_snapshots.account_code", "balance_snapshots.balance_yuan", "balance_snapshots.balance_class_code"],
+        "time_fields": ["balance_snapshots.snapshot_date"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.gk-36", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "notes": "GK-36 同义与资产/收入区分。总负债÷总资产的概念已明确，但科目分组参数与报表期尚未绑定；null 参数不能当作 null 代码条件，也不允许把两个分类谓词合成互斥的全局 AND。"
+    },
+    {
+      "id": "L0-09",
+      "question": "GK-04 出院患者手术占比需要哪些字段、关联和手术目录？",
+      "expected": {
+        "metric_ids": ["met.gk-04"],
+        "tables": ["inpatient_stays", "inpatient_procedures", "clinical_code_memberships"],
+        "fields": ["inpatient_stays.institution_id", "inpatient_stays.stay_id", "inpatient_stays.discharged_at", "inpatient_procedures.institution_id", "inpatient_procedures.stay_id", "inpatient_procedures.procedure_code", "inpatient_procedures.intervention_flag", "inpatient_procedures.code_system", "inpatient_procedures.code_edition", "clinical_code_memberships.code_system", "clinical_code_memberships.code_edition", "clinical_code_memberships.code", "clinical_code_memberships.catalog_id", "clinical_code_memberships.catalog_version", "clinical_code_memberships.valid_from", "clinical_code_memberships.valid_to"],
+        "time_fields": ["inpatient_stays.discharged_at"],
+        "relations": [{"left_table": "inpatient_procedures", "right_table": "inpatient_stays", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "stay_id", "right": "stay_id"}]}],
+        "candidate_relations": ["rel.inpatient_procedures__clinical_code_memberships__candidate"],
+        "code_filters": [{"field": "inpatient_stays.discharged_at", "op": "is_not_null", "value": null}],
+        "execution_statuses": [{"metric_id": "met.gk-04", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["inpatient_procedures.procedure_id"],
+      "notes": "来源 metrics.json / met.gk-04。住院与操作关系必须含机构键；目录只保留候选关系，需 code_system/code_edition/code 三个匹配字段及目录 ID、版本、生效期约束。official_gk_surgery_intervention_catalog_2025 是待绑定参数，不是真实目录代码。手术/介入交叉去重存在未决口径，不以介入标志单独筛掉其他手术。"
+    },
+    {
+      "id": "L0-10",
+      "question": "出院病人中做过手术或介入治疗的占比怎么定位数据？一次住院做多台手术不能按操作条数算。",
+      "expected": {
+        "metric_ids": ["met.gk-04"],
+        "tables": ["inpatient_stays", "inpatient_procedures", "clinical_code_memberships"],
+        "fields": ["inpatient_stays.institution_id", "inpatient_stays.stay_id", "inpatient_stays.discharged_at", "inpatient_procedures.institution_id", "inpatient_procedures.stay_id", "inpatient_procedures.procedure_code", "inpatient_procedures.intervention_flag", "inpatient_procedures.code_system", "inpatient_procedures.code_edition", "clinical_code_memberships.code_system", "clinical_code_memberships.code_edition", "clinical_code_memberships.code", "clinical_code_memberships.catalog_id", "clinical_code_memberships.catalog_version", "clinical_code_memberships.valid_from", "clinical_code_memberships.valid_to"],
+        "time_fields": ["inpatient_stays.discharged_at"],
+        "relations": [{"left_table": "inpatient_procedures", "right_table": "inpatient_stays", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "stay_id", "right": "stay_id"}]}],
+        "candidate_relations": ["rel.inpatient_procedures__clinical_code_memberships__candidate"],
+        "code_filters": [{"field": "inpatient_stays.discharged_at", "op": "is_not_null", "value": null}],
+        "execution_statuses": [{"metric_id": "met.gk-04", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "allowed_extra_fields": ["inpatient_procedures.procedure_id"],
+      "notes": "GK-04 同义改写。必须与四级手术占比、微创手术占比区别；按出院时间归属，performed_at 不能取代该业务时间。只识别同次住院的逻辑粒度，不声称手术/介入跨类去重规则已经核实。"
+    },
+    {
+      "id": "L0-11",
+      "question": "SH-PS-M0645 上海市年度综合质控成绩能直接从本院临床记录算出来吗？请定位依据。",
+      "expected": {
+        "metric_ids": ["met.sh-ps-m0645"],
+        "tables": ["management_evidence"],
+        "fields": ["management_evidence.institution_id", "management_evidence.evidence_id", "management_evidence.evidence_domain_code", "management_evidence.assessment_year", "management_evidence.document_reference"],
+        "time_fields": ["management_evidence.assessment_year"],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.sh-ps-m0645", "status": "blocked_rule_source"}]
+      },
+      "allowed_extra_code_filters": [{"field": "management_evidence.evidence_domain_code", "op": "eq", "value": "QUALITY"}],
+      "notes": "来源 metrics.json / met.sh-ps-m0645。只有管理证据定位；实际数据由上海市医疗质量控制管理事务中心提供，原文未提供折算公式。不能由项目满分 10 分推造原始评分或计算结果；QUALITY 仅是合成证据领域，不等同于外部成绩绑定。"
+    },
+    {
+      "id": "L0-12",
+      "question": "院、科两级质量责任制 SH-PS-S012 应该查什么证据，能不能自动给分？",
+      "expected": {
+        "metric_ids": ["met.sh-ps-s012"],
+        "tables": ["management_evidence", "departments"],
+        "fields": ["management_evidence.institution_id", "management_evidence.evidence_id", "management_evidence.evidence_domain_code", "management_evidence.evidence_stage_code", "management_evidence.assessment_year", "management_evidence.document_reference", "management_evidence.department_id", "management_evidence.assessment_clause_code", "management_evidence.evidence_method_code", "departments.institution_id", "departments.department_id"],
+        "time_fields": ["management_evidence.assessment_year"],
+        "relations": [{"left_table": "management_evidence", "right_table": "departments", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "department_id", "right": "department_id"}]}],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": [{"metric_id": "met.sh-ps-s012", "status": "blocked_rule_source"}]
+      },
+      "allowed_extra_fields": ["departments.department_name"],
+      "allowed_extra_code_filters": [{"field": "management_evidence.evidence_domain_code", "op": "eq", "value": "QUALITY"}],
+      "notes": "来源 metrics.json / met.sh-ps-s012。四项各 1 分的定性符合性须人工审核；证据条数不能代替评分。科室关系必须含 institution_id；院级证据可无 department_id，不能据 JOIN 推定院级证据无效。评审年度不等于证据 effective_date。"
+    },
+    {
+      "id": "L0-13",
+      "question": "GK-17 抗菌药物使用强度 DDDs 要把住院实际用药、DDD 标准和床日怎么关联？出院带药不要算。",
+      "expected": {
+        "metric_ids": ["met.gk-17"],
+        "tables": ["inpatient_stays", "medication_administrations", "drug_ddd_standards", "inpatient_census_days"],
+        "fields": ["inpatient_stays.institution_id", "inpatient_stays.stay_id", "inpatient_stays.admitted_at", "inpatient_stays.discharged_at", "medication_administrations.institution_id", "medication_administrations.administration_id", "medication_administrations.stay_id", "medication_administrations.drug_code", "medication_administrations.drug_code_system", "medication_administrations.drug_code_edition", "medication_administrations.ddd_standard_version", "medication_administrations.consumed_at", "medication_administrations.quantity", "medication_administrations.quantity_unit", "medication_administrations.take_home_at_discharge_flag", "drug_ddd_standards.drug_code", "drug_ddd_standards.drug_code_system", "drug_ddd_standards.drug_code_edition", "drug_ddd_standards.ddd_version", "drug_ddd_standards.is_antibacterial", "drug_ddd_standards.ddd_quantity", "drug_ddd_standards.ddd_unit", "inpatient_census_days.institution_id", "inpatient_census_days.stay_id", "inpatient_census_days.census_date"],
+        "time_fields": ["inpatient_stays.discharged_at", "medication_administrations.consumed_at", "inpatient_census_days.census_date"],
+        "relations": [
+          {"left_table": "medication_administrations", "right_table": "inpatient_stays", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "stay_id", "right": "stay_id"}]},
+          {"left_table": "inpatient_census_days", "right_table": "inpatient_stays", "pairs": [{"left": "institution_id", "right": "institution_id"}, {"left": "stay_id", "right": "stay_id"}]}
+        ],
+        "candidate_relations": ["rel.medication_administrations__drug_ddd_standards__candidate"],
+        "code_filters": [
+          {"field": "drug_ddd_standards.is_antibacterial", "op": "eq", "value": 1},
+          {"field": "medication_administrations.take_home_at_discharge_flag", "op": "eq", "value": 0},
+          {"field": "inpatient_stays.discharged_at", "op": "is_not_null", "value": null}
+        ],
+        "execution_statuses": [{"metric_id": "met.gk-17", "status": "blocked_engine_and_hospital_mapping"}]
+      },
+      "notes": "来源 metrics.json / met.gk-17。两个实际 FK 均含机构键。药品标准四键（代码体系、代码版次、药品代码、DDD 版本）只属候选关系；剂量单位转换、选版和可能的 CMI 校正尚未确认。admitted_at 是住院区间辅助字段，源 time_rule 列出的三项业务时间不可丢；不能直接将两个一对多事实表相乘计量。"
+    },
+    {
+      "id": "L0-14",
+      "question": "食堂午餐满意度和菜品退菜率这两项指标该怎么计算？",
+      "expected": {
+        "metric_ids": [],
+        "tables": [],
+        "fields": [],
+        "time_fields": [],
+        "relations": [],
+        "candidate_relations": [],
+        "code_filters": [],
+        "execution_statuses": []
+      },
+      "notes": "无匹配边界：47 项 L0 指标没有食堂午餐满意度或菜品退菜率，也无对应逻辑实体。应 blocked/no_match 且所有 Linking 维度为空；不能为了给出结果而套用质量评审、患者满意度或其他不相干指标。"
+    }
+  ]
+}

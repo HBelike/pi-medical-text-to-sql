@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>评测中心 · Pi 智能问数</title>
+    <script>
+      // 新版评测沿用问数页的主题偏好，在样式加载前恢复，避免深色主题闪白。
+      try {
+        if (localStorage.getItem("medical-query-theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch { /* 本地偏好不可读时，页面仍可使用默认主题。 */ }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/evaluation-tasks.css" />
+    <script src="/evaluation-tasks.js" defer></script>
+  </head>
+  <body class="task-page">
+    <!-- 任务列表是新版入口；旧版工作台继续提供既有多模块评测能力。 -->
+    <header class="task-topbar">
+      <div class="task-heading">
+        <a class="brand" href="/" aria-label="返回 Pi 智能问数">
+          <span class="brand-mark" aria-hidden="true">π</span>
+        </a>
+        <div class="task-heading-copy">
+          <span class="task-eyebrow">EVALUATION / TASKS</span>
+          <h1>评测中心 <span aria-hidden="true">·</span> 问答评测</h1>
+        </div>
+      </div>
+      <div class="task-header-actions" role="group" aria-label="评测页面操作">
+        <a class="task-button" href="/">返回问数</a>
+        <a class="task-button" href="/evaluation">旧版评测</a>
+        <!-- 模型对比继续复用已实现的旧工作台模块，保证入口对应真实比较记录。 -->
+        <a class="task-button" href="/evaluation?view=comparisons">模型对比</a>
+        <button class="task-button" id="refresh-button" type="button">刷新</button>
+        <button class="task-button task-theme-button" id="theme-button" type="button" aria-label="切换主题" aria-pressed="false">黑色主题</button>
+        <button class="task-button task-button-primary" id="create-button" type="button">＋ 发起评测</button>
+      </div>
+    </header>
+
+    <main class="task-main">
+      <section class="task-records" aria-labelledby="task-records-title">
+        <div class="task-records-heading">
+          <h2 id="task-records-title">评测记录</h2>
+          <span class="task-records-meta">共 <strong id="task-count">—</strong> 条</span>
+          <span class="task-running"><span aria-hidden="true"></span><strong id="running-count">—</strong> 个进行中</span>
+          <span class="task-refresh-note">运行时自动刷新</span>
+        </div>
+
+        <!-- 筛选状态由页面脚本读取；下拉选项只来自控制服务的真实记录。 -->
+        <form class="task-filters" id="task-filters" role="search" aria-label="筛选评测任务">
+          <label class="task-filter task-filter-search" for="task-search">
+            <span>名称</span>
+            <input id="task-search" name="q" type="search" placeholder="输入任务名称或 ID" autocomplete="off" />
+          </label>
+          <label class="task-filter" for="dataset-filter">
+            <span>评测集</span>
+            <select id="dataset-filter" name="dataset"><option value="">全部评测集</option></select>
+          </label>
+          <label class="task-filter" for="model-filter">
+            <span>结果生成模型</span>
+            <select id="model-filter" name="model"><option value="">全部模型</option></select>
+          </label>
+          <button class="sr-only" type="submit">应用筛选</button>
+        </form>
+
+        <div class="task-alert" id="task-error" role="alert" hidden></div>
+        <div class="task-table-shell">
+          <div class="task-table-scroll" role="region" aria-label="评测任务列表，可横向滚动" tabindex="0">
+            <table class="task-table">
+              <caption class="sr-only">评测任务记录，按创建时间从新到旧排列</caption>
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">名称</th>
+                  <th scope="col">评测集</th>
+                  <th scope="col">并发</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">进度</th>
+                  <th scope="col">准确率</th>
+                  <th scope="col">创建时间</th>
+                  <th scope="col">操作</th>
+                </tr>
+              </thead>
+              <tbody id="task-table-body">
+                <tr><td class="task-table-message" colspan="9">正在读取评测记录…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="task-empty" id="task-empty" hidden>
+            <strong>暂无评测记录</strong>
+            <p>选择评测集并发起一次评测，结果会显示在这里。</p>
+          </div>
+        </div>
+        <nav class="task-pagination" id="task-pagination" aria-label="评测记录分页"></nav>
+      </section>
+    </main>
+
+    <!-- 详情抽屉保持标题固定；任务摘要、分析和逐题展开由真实接口记录填入滚动正文。 -->
+    <dialog class="task-detail-layer" id="detail-layer" aria-labelledby="detail-title">
+      <header class="task-detail-header">
+        <h2 id="detail-title">评测详情</h2>
+        <button class="task-icon-button" id="detail-close" type="button" aria-label="关闭评测详情">×</button>
+      </header>
+      <div class="task-detail-body" id="detail-body"></div>
+    </dialog>
+
+    <!-- 发起评测只暴露控制服务当前支持的模型角色，避免保存没有实际执行含义的配置。 -->
+    <dialog class="task-create-dialog" id="create-dialog" aria-labelledby="create-title">
+      <header class="task-create-header">
+        <h2 id="create-title">发起评测</h2>
+        <button class="task-icon-button" id="create-close" type="button" aria-label="关闭发起评测窗口">×</button>
+      </header>
+      <form class="task-create-form" id="create-form">
+        <div class="task-create-body">
+          <p class="task-form-intro">逐题运行完整问数链路，并保留每题的执行与评分记录。评测集、模型和并发设置仅对本次评测生效。</p>
+          <div class="task-form-grid task-form-basics">
+            <label class="task-field" for="create-name"><span>任务名 <small>选填</small></span><input id="create-name" name="name" type="text" placeholder="例如：住院数据问数回归" maxlength="120" /></label>
+            <label class="task-field" for="create-concurrency"><span>并发数 <small>1–10</small></span><input id="create-concurrency" name="concurrency" type="number" min="1" max="10" step="1" value="1" required /></label>
+          </div>
+          <div class="task-form-grid task-form-dataset-row">
+            <label class="task-field" for="create-dataset"><span>评测集</span><select id="create-dataset" name="dataset" required><option value="">选择评测集</option></select></label>
+            <button class="task-button task-preview-button" id="create-dataset-preview" type="button" aria-label="预览已选评测集">预览题集</button>
+          </div>
+          <div class="task-upload-panel">
+            <div class="task-panel-heading"><h3>上传新评测集</h3><span>公共问题与标准答案分别保存</span></div>
+            <label class="task-field" for="dataset-name"><span>评测集名称</span><input id="dataset-name" name="dataset_name" type="text" placeholder="例如：住院问数基准题" /></label>
+            <div class="task-form-grid">
+              <label class="task-field task-file-field" for="questions-file"><span>问题文件 <small>questions.jsonl</small></span><input id="questions-file" name="questions_file" type="file" accept=".jsonl,application/x-ndjson,text/plain" /></label>
+              <label class="task-field task-file-field" for="gold-file"><span>答案文件 <small>gold.jsonl</small></span><input id="gold-file" name="gold_file" type="file" accept=".jsonl,application/x-ndjson,text/plain" /></label>
+            </div>
+            <!-- 题集契约使用两份逐行 JSON，先把必需字段告诉上传者，避免把原型中的单文件格式误当作当前接口。 -->
+            <details class="task-format-help"><summary>查看双文件 JSONL 格式</summary><p>问题文件每行仅含 <code>id、source_id、question、as_of</code>；答案文件用相同 <code>id、source_id</code> 对齐，并含 <code>family、split、category、expected_action</code>。回答题还需 <code>expected_rows</code>。<code>as_of</code> 使用带时区的时间。</p></details>
+            <div class="task-upload-footer"><p>一行一个 JSON 对象；两份文件的题号需一一对应。上传后可在上方选择。</p><button class="task-button" id="upload-dataset" type="button">上传题集</button></div>
+          </div>
+          <div class="task-model-panel">
+            <div class="task-panel-heading"><h3>本次运行的模型</h3><span>按实际支持的角色冻结</span></div>
+            <div class="task-form-grid">
+              <label class="task-field" for="create-decision-model"><span>决策模型 <small>理解、规划与修复</small></span><select id="create-decision-model" name="decision_model"><option value="">使用当前配置</option></select></label>
+              <label class="task-field" for="create-answer-model"><span>答案模型 <small>结果生成</small></span><select id="create-answer-model" name="answer_model"><option value="">使用当前配置</option></select></label>
+            </div>
+            <p class="task-model-note">选表、执行、记忆等环节暂不提供独立模型开关；任务详情会展示实际调用及执行证据。</p>
+          </div>
+          <div class="task-alert" id="create-error" role="alert" hidden></div>
+        </div>
+        <footer class="task-create-footer">
+          <button class="task-button" type="button" data-close-create>取消</button>
+          <button class="task-button task-button-primary" id="create-submit" type="submit">开始评测</button>
+        </footer>
+      </form>
+    </dialog>
+    <div class="sr-only" id="task-announcement" role="status" aria-live="polite"></div>
+  </body>
+</html>

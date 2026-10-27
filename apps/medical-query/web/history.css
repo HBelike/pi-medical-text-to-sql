@@ -1,0 +1,190 @@
+/* 历史页固定在当前视口；筛选与分页不随记录滚动，剩余空间全部交给表格。 */
+body.history-page { display: flex; flex-direction: column; height: 100dvh; min-height: 0; overflow: hidden; color: var(--ink); background: var(--canvas); }
+.history-topbar { flex: none; width: min(calc(100% - 48px), 1724px); height: 72px; gap: 16px; margin: 0 auto; padding: 0; border-bottom: 1px solid var(--line); }
+/* 一二级标题共用一行，返回、刷新、主题组成右对齐操作组，与下方筛选及表格边缘对齐。 */
+.history-page-title { display: flex; align-items: center; flex: none; gap: 10px; margin: 0; font-size: 20px; font-weight: 600; line-height: 1.4; letter-spacing: -.3px; white-space: nowrap; }
+.history-parent-title { font-size: 17px; font-weight: 500; color: var(--secondary); }
+.history-title-separator { color: var(--muted); font-size: 18px; font-weight: 400; }
+.history-page-actions { flex: none; gap: 8px; }
+.history-page-actions .history-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 35px; }
+.history-page-actions svg { flex: none; width: 15px; height: 15px; }
+.history-page-actions .theme-toggle { width: 35px; height: 35px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.history-back-link { text-decoration: none; }
+.history-main { display: flex; flex-direction: column; flex: 1; width: min(calc(100% - 48px), 1724px); min-width: 0; min-height: 0; margin: 0 auto; padding: 10px 0 10px; overflow: hidden; }
+.history-button, .history-page-button { min-height: 35px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--secondary); font-size: 12px; line-height: 1.6; white-space: nowrap; }
+.history-button:hover:not(:disabled), .history-page-button:hover:not(:disabled) { background: var(--surface); color: var(--ink); }
+.history-button { flex: none; }
+
+/* 筛选始终为一条横向工具栏，窄屏可平移和键盘聚焦所有控件，不挤占表格高度。 */
+.history-filters { display: flex; align-items: flex-end; flex: none; gap: 10px; min-width: 0; margin: 0 0 12px; padding: 10px 12px; overflow-x: auto; overflow-y: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); scrollbar-color: var(--input-line) transparent; scrollbar-width: thin; }
+.history-filter { flex: 1 0 140px; min-width: 0; }
+.history-search { flex: 2 0 220px; }
+.history-filter > label { display: block; margin-bottom: 4px; color: var(--secondary); font-size: 10px; line-height: 1.6; }
+.history-filter select, .history-search-field { width: 100%; min-width: 0; min-height: 33px; border: 1px solid var(--input-line); border-radius: 5px; background: var(--paper); }
+.history-filter select { padding: 6px 25px 6px 9px; font-size: 12px; text-overflow: ellipsis; }
+.history-search-field { display: flex; align-items: center; gap: 7px; padding-left: 11px; }
+.history-search-field:focus-within { border-color: var(--focus); box-shadow: 0 0 0 2px var(--focus-wash); }
+.history-search-field svg { flex: none; width: 17px; height: 17px; color: var(--muted); }
+.history-search-field input { min-width: 0; width: 100%; padding: 6px 9px 6px 0; border: 0; border-radius: 5px; outline: none; color: var(--ink); background: transparent; font-size: 12px; line-height: 19px; }
+.history-search-field input::placeholder { color: var(--muted); opacity: 1; }
+.history-reset { flex: none; min-height: 33px; padding: 6px 3px; border: 0; border-radius: 5px; background: transparent; color: var(--secondary); font-size: 12px; white-space: nowrap; }
+.history-reset:hover { color: var(--teal-strong); }
+.history-error { flex: none; max-height: 60px; margin-bottom: 8px; padding: 8px 12px; overflow: auto; border: 1px solid var(--red-line); border-radius: 6px; background: var(--red-wash); color: var(--red); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.history-records { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.history-table-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; flex: none; gap: 3px 14px; margin: 0 1px 7px; font-size: 11px; line-height: 1.7; }
+.history-table-heading > span { color: var(--muted); font-size: 11px; }
+.history-table-wrap { flex: 1; width: 100%; max-width: 100%; min-height: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); scrollbar-color: var(--input-line) transparent; scrollbar-width: thin; }
+.history-table-wrap:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+/* 正常表宽和列宽由拖拽逻辑写入像素值，样式不设置总宽下限或百分比扩张。 */
+.history-table { min-width: 0; border-collapse: separate; border-spacing: 0; table-layout: fixed; text-align: left; font-size: 12px; }
+.history-table th { position: sticky; top: 0; z-index: 2; padding: 9px 16px 9px 12px; border-bottom: 1px solid var(--line); background: var(--surface); color: var(--secondary); font-size: 11px; font-weight: 500; line-height: 1.7; white-space: nowrap; }
+.history-table td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; background: var(--paper); line-height: 1.7; overflow-wrap: anywhere; }
+.history-table tr:last-child td { border-bottom: 0; }
+.history-table tbody tr:nth-child(even) td { background: var(--row-alternate); }
+.history-table tbody tr:hover td { background: var(--surface-hover); }
+.history-table .history-actions-cell { position: sticky; right: 0; z-index: 1; border-left: 1px solid var(--line-soft); }
+.history-table th.history-actions-cell { z-index: 3; border-left-color: var(--line); background: var(--surface); }
+/* 调宽热区覆盖表头边缘，键盘焦点与悬停时显出轴线；拖动期间禁止误选单元格。 */
+.history-column-resizer { position: absolute; top: 0; right: -4px; bottom: 0; z-index: 4; width: 10px; cursor: col-resize; touch-action: none; }
+.history-column-resizer::after { content: ""; position: absolute; top: 8px; bottom: 8px; left: 4px; width: 1px; background: var(--input-line); }
+.history-column-resizer:hover::after, .history-column-resizer:focus-visible::after { width: 2px; background: var(--teal); }
+.history-column-resizer:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.history-table th:last-child .history-column-resizer { right: 0; }
+body.is-column-resizing, body.is-column-resizing * { cursor: col-resize !important; user-select: none !important; }
+.history-table td:focus-visible, .history-table [data-preview]:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+.history-id { display: block; color: var(--secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.history-mode { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.history-cell-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-question-text { -webkit-line-clamp: 2; font-weight: 500; }
+.history-cell-secondary { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.history-table .history-cell-secondary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-cell-empty { color: var(--muted); font-size: 11px; }
+.history-table-list { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.history-table-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.history-call-list { display: grid; gap: 5px; }
+.history-call-list > div { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); gap: 6px; align-items: baseline; }
+.history-call-stage { display: block; min-width: 0; overflow: hidden; color: var(--secondary); font-size: 10px; line-height: 1.7; text-overflow: ellipsis; white-space: nowrap; }
+.history-call-model { display: block; min-width: 0; overflow: hidden; font-size: 11px; line-height: 1.7; text-overflow: ellipsis; white-space: nowrap; }
+.history-status { display: inline-flex; align-items: flex-start; gap: 5px; max-width: 100%; color: var(--secondary); font-size: 11px; line-height: 1.7; }
+.history-status::before { content: ""; flex: none; width: 5px; height: 5px; margin-top: 7px; border-radius: 50%; background: currentColor; }
+.history-status[data-status="completed"] { color: var(--teal-strong); }
+.history-status:is([data-status="queued"], [data-status="running"], [data-status="waiting_for_user"], [data-status="blocked"]) { color: var(--amber); }
+.history-status:is([data-status="failed"], [data-status="interrupted"], [data-status="error"]) { color: var(--red); }
+.history-date { display: block; color: var(--secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.history-time { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.history-row-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.history-action { display: inline-block; padding: 0; border: 0; border-radius: 3px; background: transparent; color: var(--teal-strong); font-size: 11px; line-height: 1.8; text-decoration: none; white-space: nowrap; }
+.history-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+.history-action-secondary { color: var(--secondary); }
+.history-table .history-empty-cell { height: 190px; padding: 22px 16px; text-align: center; vertical-align: middle; background: var(--paper); }
+.history-empty-title { color: var(--ink); font-size: 14px; font-weight: 500; }
+.history-empty-note { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.history-empty-reset { margin-top: 15px; font-size: 12px; }
+/* 空态不保留宽表列宽，确保手机上的加载、错误与清除筛选入口仍居中可见。 */
+.history-table.is-empty { width: 100%; min-width: 0; }
+.history-table.is-empty thead, .history-table.is-empty colgroup { display: none; }
+.history-loading { display: inline-flex; align-items: center; justify-content: center; gap: 9px; color: var(--secondary); }
+.history-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; flex: none; gap: 6px 12px; margin-top: 8px; color: var(--secondary); font-size: 11px; line-height: 1.7; }
+.history-pagination-controls { display: flex; align-items: center; gap: 8px; }
+.history-pagination select { min-height: 30px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--secondary); background: var(--paper); font-size: 11px; }
+.history-page-button { min-height: 30px; padding: 5px 10px; font-size: 11px; }
+#history-page-label { min-width: 43px; text-align: center; font-variant-numeric: tabular-nums; }
+.history-table-note { flex: none; margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+
+/* 单元格预览浮层可移入并选择原文；固定定位及内部滚动确保不推高页面。 */
+.history-cell-preview { position: fixed; z-index: 100; display: flex; flex-direction: column; width: min(440px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: min(280px, 45dvh); margin: 0; overflow: hidden; border: 1px solid var(--input-line); border-radius: 9px; color: var(--ink); background: var(--paper); box-shadow: var(--drawer-shadow); }
+.history-cell-preview:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.history-preview-heading { display: flex; align-items: center; justify-content: space-between; flex: none; gap: 12px; min-width: 0; padding: 9px 11px 8px 13px; border-bottom: 1px solid var(--line-soft); }
+.history-preview-heading h2 { min-width: 0; margin: 0; color: var(--secondary); font-size: 11px; font-weight: 500; line-height: 1.7; overflow-wrap: anywhere; }
+.history-preview-close { display: grid; place-items: center; flex: none; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--secondary); font-size: 18px; line-height: 1; }
+.history-preview-close:hover { color: var(--ink); background: var(--surface); }
+.history-preview-close:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.history-preview-content { flex: 1; min-width: 0; min-height: 0; margin: 0; padding: 11px 13px 13px; overflow: auto; overscroll-behavior: contain; color: var(--ink); font-size: 12px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; scrollbar-color: var(--input-line) transparent; scrollbar-width: thin; }
+.history-preview-content:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+
+/* 详情保持单一阅读列，完整原文与调用记录分区；对话框内部滚动不传递给页面。 */
+.history-detail { width: min(860px, calc(100vw - 40px)); max-height: min(88dvh, 940px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: var(--paper); box-shadow: var(--drawer-shadow); }
+.history-detail[open] { display: flex; flex-direction: column; }
+.history-detail::backdrop { background: var(--backdrop); }
+.history-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; flex: none; gap: 18px; padding: 22px 25px 18px; border-bottom: 1px solid var(--line); }
+.history-detail-heading > div { min-width: 0; }
+.history-detail-heading h2 { font-size: 19px; font-weight: 500; line-height: 1.6; }
+.history-detail-heading p { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.7; overflow-wrap: anywhere; }
+.history-detail-body { min-height: 0; padding: 23px 26px 28px; overflow: auto; overscroll-behavior: contain; scrollbar-color: var(--input-line) transparent; scrollbar-width: thin; }
+.history-detail-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 28px; margin: 0 0 26px; padding: 14px 17px; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--row-alternate); }
+.history-detail-summary > div { min-width: 0; }
+.history-detail-summary dt { color: var(--muted); font-size: 10px; line-height: 1.8; }
+.history-detail-summary dd { margin: 3px 0 0; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.history-detail-section + .history-detail-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line-soft); }
+.history-detail-section h3 { margin: 0 0 10px; color: var(--secondary); font-size: 12px; font-weight: 500; line-height: 1.8; }
+.history-detail-text { font-size: 13px; line-height: 1.95; white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-detail-error { color: var(--red); }
+.history-detail-tables { display: flex; flex-wrap: wrap; gap: 7px; list-style: none; padding: 0; margin: 0; }
+.history-detail-tables li { max-width: 100%; padding: 5px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--row-alternate); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.history-detail-calls { margin: 0; padding: 0; list-style: none; }
+.history-detail-call { display: grid; grid-template-columns: minmax(130px, .85fr) minmax(0, 1fr) auto; gap: 10px 16px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--line-soft); font-size: 12px; line-height: 1.8; }
+.history-detail-call:first-child { padding-top: 0; }
+.history-detail-call:last-child { border-bottom: 0; padding-bottom: 0; }
+.history-detail-call > span { min-width: 0; overflow-wrap: anywhere; }
+.history-detail-call > span:first-child { color: var(--secondary); }
+.history-detail-call .history-status { font-size: 10px; }
+.history-detail-footer { display: flex; justify-content: flex-end; flex: none; padding: 15px 25px; border-top: 1px solid var(--line); }
+.history-primary-link { display: inline-block; padding: 8px 14px; border: 1px solid var(--teal); border-radius: 6px; background: var(--teal); color: var(--on-accent); font-size: 12px; line-height: 1.7; text-decoration: none; }
+.history-primary-link:hover { border-color: var(--teal-strong); background: var(--teal-strong); }
+
+@media (max-width: 700px) {
+  .history-topbar { width: calc(100% - 28px); height: 60px; gap: 12px; padding: 0; }
+  .history-page-title { gap: 7px; font-size: 18px; }
+  .history-parent-title { font-size: 15px; }
+  .history-page-actions { gap: 6px; }
+  .history-main { width: calc(100% - 28px); padding-top: 8px; padding-bottom: 8px; }
+  .history-filters { gap: 9px; margin-bottom: 8px; padding: 8px 10px; }
+  .history-filter { flex: 0 0 138px; }
+  .history-search { flex-basis: 214px; }
+  .history-pagination { align-items: flex-start; }
+  .history-pagination-controls { flex-wrap: wrap; gap: 6px; }
+  .history-detail { width: calc(100vw - 24px); max-height: 90dvh; }
+  .history-detail-heading { padding: 18px 18px 15px; }
+  .history-detail-body { padding: 19px 18px 23px; }
+  .history-detail-summary { gap: 11px 16px; padding: 13px; }
+  .history-detail-call { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; }
+  .history-detail-call > span:first-child { grid-column: 1 / -1; }
+  .history-detail-footer { padding: 13px 18px; }
+}
+/* 窄屏保留完整同排标题，页面操作使用有名称的图标按钮，避免换行挤占表格。 */
+@media (max-width: 600px) {
+  .history-page-title { font-size: 16px; }
+  .history-parent-title { font-size: 14px; }
+  .history-topbar .brand { gap: 7px; }
+  .history-topbar .brand-mark { width: 28px; height: 28px; font-size: 23px; }
+  .history-page-actions .history-button, .history-page-actions .theme-toggle { width: 32px; height: 32px; min-height: 32px; padding: 0; }
+  .history-page-actions .history-button > span { display: none; }
+}
+@media (max-width: 400px) {
+  .history-main { width: calc(100% - 24px); }
+  .history-topbar { width: calc(100% - 24px); gap: 10px; }
+  .history-page-title { gap: 6px; font-size: 14px; }
+  .history-parent-title { font-size: 12px; }
+  .history-topbar .brand-mark { width: 24px; height: 24px; font-size: 21px; }
+  .history-page-actions { gap: 4px; }
+  .history-table-heading { gap: 2px; }
+  .history-table-heading > span { flex-basis: 100%; }
+  .history-detail-summary { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 短屏将标签与控件放在同一行，留出至少可操作的记录区；所有筛选仍能横向访问。 */
+@media (max-height: 560px) {
+  .history-topbar { height: 48px; }
+  .history-topbar .brand-mark { width: 28px; height: 28px; font-size: 23px; }
+  .history-main { padding-top: 5px; padding-bottom: 5px; }
+  .history-button { min-height: 30px; padding-top: 5px; padding-bottom: 5px; }
+  .history-filters { gap: 12px; margin-bottom: 7px; padding: 6px 9px; }
+  .history-filter { display: flex; align-items: center; gap: 6px; flex: 0 0 186px; }
+  .history-filter > label { flex: none; margin-bottom: 0; white-space: nowrap; }
+  .history-search { flex-basis: 260px; }
+  .history-search-field { flex: 1; }
+  .history-table-heading { margin-bottom: 5px; }
+  .history-table .history-empty-cell { height: 130px; padding: 15px 12px; }
+  .history-pagination { margin-top: 6px; }
+  .history-table-note { margin-top: 5px; font-size: 9px; line-height: 1.5; }
+}

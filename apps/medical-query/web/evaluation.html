@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>评测工作台 · Pi 智能问数</title>
+    <script>
+      // 工作台与问数页共享主题；在首屏渲染前恢复，避免深色主题闪白。
+      try {
+        if (localStorage.getItem("medical-query-theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch { /* 存储不可用时，仍允许在当前页面切换主题。 */ }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/evaluation.css" />
+    <script src="/evaluation.js" defer></script>
+  </head>
+  <body class="evaluation-page">
+    <header class="topbar evaluation-topbar">
+      <a class="brand" href="/" aria-label="返回 Pi 智能问数">
+        <span class="brand-mark" aria-hidden="true">π</span><span class="brand-title">Pi 智能问数</span>
+      </a>
+      <span class="evaluation-product-name">评测工作台</span>
+      <div class="header-actions">
+        <a class="eval-button" href="/">返回问数</a>
+        <button class="eval-button" id="eval-theme" type="button" aria-pressed="false">黑色主题</button>
+      </div>
+    </header>
+    <div class="evaluation-layout">
+      <nav class="evaluation-nav" aria-label="评测导航">
+        <a href="/evaluation?view=experiments" data-view="experiments">实验</a>
+        <a href="/evaluation?view=datasets" data-view="datasets">数据与知识</a>
+        <a href="/evaluation?view=variants" data-view="variants">运行方案</a>
+        <a href="/evaluation?view=comparisons" data-view="comparisons">对比与归因</a>
+        <a href="/evaluation?view=releases" data-view="releases">质量发布</a>
+        <a href="/evaluation?view=artifacts" data-view="artifacts">产物存储</a>
+        <p class="evaluation-nav-note">全部记录来自控制服务。完整产物保留至手动删除。</p>
+      </nav>
+      <main class="evaluation-main" id="evaluation-main" tabindex="-1">
+        <div class="evaluation-heading">
+          <div><h1 id="eval-title">实验</h1><p id="eval-description">查看实验进度、执行证据与独立评分。</p></div>
+          <div class="eval-actions" id="eval-page-actions"></div>
+        </div>
+        <div class="eval-alert" id="eval-error" role="alert" hidden></div>
+        <div class="eval-notice" id="eval-notice" role="status" hidden></div>
+        <section id="eval-content" aria-label="评测记录" aria-busy="true"><div class="eval-empty">正在连接评测服务…</div></section>
+      </main>
+    </div>
+    <!-- 原生 dialog 保留键盘与焦点约束；任何写入都在服务端完成并返回可追溯记录。 -->
+    <dialog class="eval-dialog" id="eval-dialog" aria-labelledby="eval-dialog-title">
+      <header><div><h2 id="eval-dialog-title"></h2><p id="eval-dialog-description"></p></div><button class="eval-icon" id="eval-dialog-close" type="button" aria-label="关闭详情">×</button></header>
+      <div class="eval-dialog-body" id="eval-dialog-body"></div>
+    </dialog>
+    <div class="sr-only" id="eval-announcement" role="status" aria-live="polite"></div>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "format_version": "l0-schema-v1",
+  "document_name": "10_首期L0及一线落地清单（首期L0及一线落地：跨体系清单）",
+  "document_version": null,
+  "document_version_missing_reason": "飞书文档未标明独立的版本号；其中2026-10-14是分级复核日期，不能当作文档版本。",
+  "document_url": "private-source-link-redacted",
+  "document_hash": null,
+  "document_hash_missing_reason": "仅取得浏览器打印的派生PDF，未取得原始飞书文档文件字节，故不能将派生文件哈希冒充原文档哈希。",
+  "source_export_sha256": "5ba7451e6f512bb49be40411415e6fe1509bd0bcea56635b5b653a25a2ceffcb",
+  "source_scope": "上海市三级公立综合医院；L0是院级首期管理建议，并非官方指标的计算难度等级。",
+  "covered_sections": [
+    {"section": "前言", "use": "首期47项范围、L0含义、适用医院与分级性质"},
+    {"section": "一、首期L0基础量与补充需求 1.1", "use": "同名基础量的纳排边界与依赖"},
+    {"section": "二、首期院级L0候选", "use": "47项原始编号、清单名称、体系和链接"},
+    {"section": "四、怎样安排建设和验收", "use": "版本、纳排、统计对象、时间窗口和医院映射缺口"},
+    {"section": "第二章所链接的国考、上海评审、国家专业质控字典及可取得的官方文件", "use": "逐项公式与计算规则；具体位置见metrics.json各项source_refs"}
+  ],
+  "metric_count": 47,
+  "unprocessed_sections": [
+    {"section": "一、1.2 官方指标之外的补充L0需求", "reason": "业务量、收入、预算、现金及医保回收需求没有新增官方指标编号，本包仅覆盖第二章47项；相关原始量可在后续需求包建模。"},
+    {"section": "总索引其余L0候选", "reason": "本文件明确总索引共有92项L0，本次首期只纳入47项。"},
+    {"section": "三、部门怎样改进，一线得到什么", "reason": "属于管理动作说明，不构成独立指标计算定义；未当作计算口径。"}
+  ]
+}

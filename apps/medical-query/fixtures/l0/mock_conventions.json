@@ -1,0 +1,101 @@
+{
+  "version": "l0-synthetic-v1",
+  "provenance": "synthetic_test_design",
+  "description": "仅约束首批 L0 原始合成事实与基础量回归，不是官方指标口径、真实医院映射或47项指标计算结果；原始六份知识文件保持不变。",
+  "global_rules": [
+    {
+      "id": "scope",
+      "provenance": "synthetic_test_design",
+      "description": "一个 l0_mock 数据源，H001 为主体合成医院；H999 为隔离对照机构，共用部分 patient_id、visit_id、stay_id、procedure_id。所有跨表关联和机构过滤必须包含 institution_id。26张表全部建成，未造数的表不代表真实业务量为零。",
+      "primary_institution_id": "H001",
+      "control_institution_id": "H999"
+    },
+    {
+      "id": "time",
+      "provenance": "synthetic_test_design",
+      "description": "日期时间按 Asia/Shanghai 本地文本保存；示例回归窗口采用2026年9月左闭右开，仅为测试端点，不替任何官方指标确定统计时间字段、年度口径或跨期归属。",
+      "timezone": "Asia/Shanghai",
+      "example_window": {"start_inclusive": "2026-09-01 00:00:00", "end_exclusive": "2026-10-01 00:00:00"}
+    },
+    {
+      "id": "values",
+      "provenance": "synthetic_test_design",
+      "description": "使用原 mock_semantics 的已定义代码；布尔标志为整数0/1，手术分级、入院病情及切口愈合等级为字符。未定义或故意缺失的信息保存 NULL，不默认转换成0或否；金额单位为元。以 SYN_、SYNTHETIC、l0-v1 命名的代码/目录/版本都是自造测试值，不是 ICD、国家目录或正式评审标准。"
+    },
+    {
+      "id": "extra_code_values",
+      "provenance": "synthetic_test_design",
+      "description": "下列值仅为本合成库局部代码；它们不补写官方枚举、目录成员关系或真实业务字段绑定。",
+      "field_values": {
+        "inpatient_diagnoses.diagnosis_code": ["SYN_DIAG_A", "SYN_DIAG_B"],
+        "inpatient_diagnoses.code_system": ["SYNTHETIC"],
+        "inpatient_diagnoses.code_edition": ["l0-v1"],
+        "inpatient_procedures.procedure_code": ["SYN_PROC_A", "SYN_PROC_B", "SYN_PROC_C"],
+        "inpatient_procedures.code_system": ["SYNTHETIC"],
+        "inpatient_procedures.code_edition": ["l0-v1"],
+        "clinical_code_memberships.catalog_id": ["SYN_PROCEDURES"],
+        "clinical_code_memberships.catalog_version": ["l0-v1"],
+        "clinical_code_memberships.code_system": ["SYNTHETIC"],
+        "clinical_code_memberships.code_edition": ["l0-v1"],
+        "clinical_code_memberships.code": ["SYN_PROC_A", "SYN_PROC_B", "SYN_PROC_C"],
+        "clinical_events.present_on_admission_code": ["4"],
+        "drug_ddd_standards.is_antibacterial": [0, 1],
+        "balance_snapshots.account_code": ["SYN_CASH", "SYN_INVENTORY", "SYN_FIXED_ASSET", "SYN_PAYABLE", "SYN_LONG_LOAN"],
+        "management_evidence.evidence_stage_code": ["SYN_SYSTEM", "SYN_OPERATION", "SYN_RESPONSIBILITY", "SYN_EXTERNAL_RESULT_PENDING"],
+        "emr_assessment_items.standard_version": ["SYN_EMR_v1"],
+        "emr_assessment_items.item_code": ["SYN_ITEM_A", "SYN_ITEM_B", "SYN_ITEM_C"],
+        "emr_assessment_items.option_code": ["SYN_OPTION_A", "SYN_OPTION_B", "SYN_OPTION_C"],
+        "emr_assessment_items.option_role_code": ["SYN_BASIC", "SYN_OPTIONAL"]
+      }
+    }
+  ],
+  "metric_rules": [
+    {
+      "metric_ids": ["met.gk-01"],
+      "provenance": "synthetic_test_design",
+      "description": "分别提供门诊挂号和出院住院事实；重复患者保留不同人次。急诊、体检、取消挂号、家庭病床、在院未出院、未到病区和母婴同室均有对照。基础回归可明确筛选已完成门诊，但不据此补定 GK01 官方取消/退号规则；不预先计算比值。"
+    },
+    {
+      "metric_ids": ["met.gk-23"],
+      "provenance": "synthetic_test_design",
+      "description": "V001 有挂号与检查两条成功预约，故意保留配对歧义；A004 缺叫诊、A007 缺报到、A008 为零等待，A005 爽约、A006 取消。V010 在预约爽约后自行到院完成门诊，预约状态与挂号完成状态不互相覆盖。仅验证单条完整时间对，不选择多预约合并规则或缺失值分母，不计算平均等待。"
+    },
+    {
+      "metric_ids": ["met.sh-ps-m0003"],
+      "provenance": "synthetic_test_design",
+      "description": "占用床日与开放床位按各自粒度独立存储；9月1—2日为有限对照日期，其他日期仅补边界/床型样例，不构成整月完整床日台账。普通床、家庭床、临时加床、母婴同室分别编码，不替上海统计系统确定纳排和日界，不能用占床明细连接后重复累计开放床位。"
+    },
+    {
+      "metric_ids": ["met.gk-36", "met.sh-ps-m0043", "met.sh-ps-m0044"],
+      "provenance": "synthetic_test_design",
+      "description": "2026-09-30 仅存五条合成叶子科目余额，另含月外及异机构对照；未加入总计行。测试只核验分类余额，不形成资产负债率。受托代理类映射未提供，库存速动标志故意缺失；本样例时点不代替正式监测期末或平均余额口径。"
+    },
+    {
+      "metric_ids": ["met.gk-04", "met.gk-05", "met.gk-06", "met.sh-ps-m0034", "met.sh-ps-m0036", "met.sh-ps-m0085"],
+      "provenance": "synthetic_test_design",
+      "description": "S002 两条手术及一次转科，R002 引用同机构同住院的 R001；S007 手术在9月但出院在10月1日。操作次数、手术住院人次和患者数不同；入院/出院科室角色不同。SYN_PROCEDURES 仅是合成目录，不推定国家手术、微创、等级目录资格；不计算手术比例。"
+    },
+    {
+      "metric_ids": ["met.gk-24", "met.sh-ps-m0645", "met.sh-ps-s012"],
+      "provenance": "synthetic_test_design",
+      "description": "电子病历仅有三条自造评估项，包含阈值附近值与缺失数据质量，未提供完整等级依赖或国家项目表，不能推出等级。质量责任制仅存院/科证据，四项不等于四项通过；合成引用不是已核验文件。ME_EXTERNAL_PENDING 代表外部成绩尚未取得，引用为NULL；不构造分数、不把证据数量或内部业务量当外部成绩。"
+    }
+  ],
+  "scenario_notes": [
+    {
+      "id": "grain_and_isolation",
+      "provenance": "synthetic_test_design",
+      "description": "H001/P001 同时对应 V001、V002 和 S001、S002；H999 复用 P001、V001、S001。用于查出把患者数当人次或仅按业务键连接造成的串机构。"
+    },
+    {
+      "id": "partial_dataset",
+      "provenance": "synthetic_test_design",
+      "description": "首批数据只覆盖 Schema Linking、原始记录查询及有限基础量回归。空表、缺行与NULL均不证明指标值为0，不支持47项指标整体计算、年度评审或真实医院结论。所有基础量对照仅保存在离线测试，不写入数据库或指标知识目录。"
+    },
+    {
+      "id": "references",
+      "provenance": "synthetic_test_design",
+      "description": "synthetic:l0:quality-system、synthetic:l0:quality-meeting、synthetic:l0:director-interview 是自造材料引用标识，无真实材料或外部评审认证。实际的表、字段、关系和目录引用须可在原知识文件与 SQLite 中核对；本文件不补写官方待确认事项。"
+    }
+  ]
+}

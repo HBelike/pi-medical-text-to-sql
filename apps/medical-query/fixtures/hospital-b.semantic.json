@@ -1,0 +1,19 @@
+{
+  "name": "模拟医院 B",
+  "version": "fixture-v1",
+  "as_of": "2026-10-15T12:00:00+08:00",
+  "description": "独立合成源，表名和状态代码与医院A不同；不能使用A源字段。患者人数按person_key去重，住院人次按episode_key计数。",
+  "tables": {
+    "persons": {"description": "患者主表，一行一个患者", "columns": {"person_key": "患者唯一标识", "display_name": "患者姓名", "age_years": "夹具参照时间下整数年龄", "gender_code": "2=女性，1=男性"}},
+    "admission_episodes": {"description": "住院事件，一行一次住院，同一患者可多次住院", "columns": {"episode_key": "住院事件唯一标识", "person_ref": "患者标识，关联persons.person_key", "unit_name": "住院归属科室", "entered_at": "入院时间", "leave_time": "出院时间，住院中为空", "state_code": "3=已出院，1=住院中，9=已撤销；出院统计仅3", "charge_amount": "本次住院费用，单位元"}},
+    "episode_diagnoses": {"description": "住院诊断，同一住院可多条记录", "columns": {"item_key": "诊断记录标识", "episode_ref": "所属住院标识", "disease_code": "DM2=2型糖尿病，HTN=高血压", "certainty_code": "1=确诊，0=疑似；不可套用state_code含义"}}
+  },
+  "relations": [
+    {"id": "episodes_person", "left_table": "admission_episodes", "right_table": "persons", "pairs": [{"left": "person_ref", "right": "person_key"}], "origin": "human_confirmed", "status": "active", "cardinality": "many_to_one"},
+    {"id": "diagnoses_episode", "left_table": "episode_diagnoses", "right_table": "admission_episodes", "pairs": [{"left": "episode_ref", "right": "episode_key"}], "origin": "human_confirmed", "status": "active", "cardinality": "many_to_one"}
+  ],
+  "metrics": [
+    {"id": "discharged_visits", "name": "出院人次", "table": "admission_episodes", "key": "episode_key", "status_field": "admission_episodes.state_code", "status_value": 3, "time_field": "admission_episodes.leave_time", "aggregate": "count"},
+    {"id": "discharged_patients", "name": "出院患者人数", "table": "admission_episodes", "key": "person_ref", "status_field": "admission_episodes.state_code", "status_value": 3, "time_field": "admission_episodes.leave_time", "aggregate": "count_distinct"}
+  ]
+}

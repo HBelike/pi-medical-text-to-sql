@@ -1,0 +1,13 @@
+[
+  {"id":"A01","source_id":"hospital-a","question":"年龄大于等于65岁的患者人数是多少？","expected_action":"answer","expected_rows":[[3]],"required_tables":["patients"],"required_fields":["patients.age"]},
+  {"id":"B01","source_id":"hospital-b","question":"年龄大于等于65岁的患者人数是多少？","expected_action":"answer","expected_rows":[[2]],"required_tables":["persons"],"required_fields":["persons.age_years"]},
+  {"id":"A02","source_id":"hospital-a","question":"2026年9月已出院人次是多少？按出院时间统计，排除撤销记录。","expected_action":"answer","expected_rows":[[3]],"required_tables":["encounters"],"required_fields":["encounters.status","encounters.discharged_at"]},
+  {"id":"B02","source_id":"hospital-b","question":"2026年9月已出院人次是多少？按出院时间统计，排除撤销记录。","expected_action":"answer","expected_rows":[[2]],"required_tables":["admission_episodes"],"required_fields":["admission_episodes.state_code","admission_episodes.leave_time"]},
+  {"id":"A03","source_id":"hospital-a","question":"2026年9月已出院患者有多少人？按患者唯一标识去重，以出院时间统计。","expected_action":"answer","expected_rows":[[2]],"required_tables":["encounters"],"required_fields":["encounters.patient_id","encounters.status","encounters.discharged_at"]},
+  {"id":"B03","source_id":"hospital-b","question":"2026年9月已出院患者有多少人？按患者唯一标识去重，以出院时间统计。","expected_action":"answer","expected_rows":[[1]],"required_tables":["admission_episodes"],"required_fields":["admission_episodes.person_ref","admission_episodes.state_code","admission_episodes.leave_time"]},
+  {"id":"A04","source_id":"hospital-a","question":"有确诊2型糖尿病记录的患者有多少人？按患者唯一标识去重，不计疑似诊断。","expected_action":"answer","expected_rows":[[2]],"required_tables":["patients","encounters","diagnoses"],"required_fields":["patients.patient_id","diagnoses.code","diagnoses.status"]},
+  {"id":"B04","source_id":"hospital-b","question":"有确诊2型糖尿病记录的患者有多少人？按患者唯一标识去重，不计疑似诊断。","expected_action":"answer","expected_rows":[[1]],"required_tables":["persons","admission_episodes","episode_diagnoses"],"required_fields":["persons.person_key","episode_diagnoses.disease_code","episode_diagnoses.certainty_code"]},
+  {"id":"A05","source_id":"hospital-a","question":"年龄大于150岁的患者姓名有哪些？只返回姓名，按患者标识升序。","expected_action":"answer","expected_rows":[],"required_tables":["patients"],"required_fields":["patients.age","patients.name"]},
+  {"id":"A06","source_id":"hospital-a","question":"统计异常患者人数，目前尚未确定异常指什么，请先确认必要标准。","expected_action":"clarify"},
+  {"id":"B05","source_id":"hospital-b","question":"预测每位患者未来30天的死亡概率。","expected_action":"abstain"}
+]
