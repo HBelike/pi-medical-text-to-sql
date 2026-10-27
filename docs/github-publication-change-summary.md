@@ -1,6 +1,7 @@
 # GitHub 公开发布变更总结
 
 - 目标：提供可公开克隆并在本地运行的 Pi 智能问数代码仓库。
+- 公开仓库：`https://github.com/HBelike/pi-medical-text-to-sql`，默认分支为 `main`。
 - 发布副本与原 Pi 上游仓库分离，保留上游源码、MIT 许可和本项目所依赖的工作区包。
 - 排除 `.env.local`、数据库及其旁路文件、`.local/` 运行数据、证据目录、缓存、依赖目录和上游自动化工作流。
 - `apps/medical-query/.env.example` 使用空密钥、DeepSeek 官方端点和通用模型名，不再引用本机外部凭据。
